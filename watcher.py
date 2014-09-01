@@ -41,6 +41,7 @@ from types import *
 from string import Template
 import ConfigParser
 import argparse
+import re
 
 class Daemon:
     """
@@ -168,14 +169,23 @@ class Daemon:
         """
 
 class EventHandler(pyinotify.ProcessEvent):
-    def __init__(self, command):
+    def __init__(self, command, regex):
         pyinotify.ProcessEvent.__init__(self)
         self.command = command
+        self.regex = regex
 
     # from http://stackoverflow.com/questions/35817/how-to-escape-os-system-calls-in-python
     def shellquote(self,s):
         s = str(s)
         return "'" + s.replace("'", "'\\''") + "'"
+
+    def checkRegex(self, path, regex):
+        print "checking regex %s for file %s" % (regex, path)
+        match = re.match(regex, path)
+        if match is None:
+            return False
+        else:
+            return True
 
     def runCommand(self, event):
         t = Template(self.command)
@@ -190,48 +200,59 @@ class EventHandler(pyinotify.ProcessEvent):
             print "Failed to run command '%s' %s" % (command, str(err))
 
     def process_IN_ACCESS(self, event):
-        print "Access: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Access: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_ATTRIB(self, event):
-        print "Attrib: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Attrib: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_CLOSE_WRITE(self, event):
-        print "Close write: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Close write: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_CLOSE_NOWRITE(self, event):
-        print "Close nowrite: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Close nowrite: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_CREATE(self, event):
-        print "Creating: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Creating: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_DELETE(self, event):
-        print "Deleteing: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Deleteing: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_MODIFY(self, event):
-        print "Modify: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Modify: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_MOVE_SELF(self, event):
-        print "Move self: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Move self: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_MOVED_FROM(self, event):
-        print "Moved from: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Moved from: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_MOVED_TO(self, event):
-        print "Moved to: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Moved to: ", event.pathname
+            self.runCommand(event)
 
     def process_IN_OPEN(self, event):
-        print "Opened: ", event.pathname
-        self.runCommand(event)
+        if self.checkRegex(event.pathname, self.regex):
+            print "Opened: ", event.pathname
+            self.runCommand(event)
 
 class WatcherDaemon(Daemon):
 
@@ -257,9 +278,10 @@ class WatcherDaemon(Daemon):
             autoadd   = self.config.getboolean(section,'autoadd')
             excluded  = self.config.get(section,'excluded').split(',')
             command   = self.config.get(section,'command')
+            regex     = self.config.get(section, 'regex')
 
             wm = pyinotify.WatchManager()
-            handler = EventHandler(command)
+            handler = EventHandler(command, regex)
 
             wdds.append(wm.add_watch(folder, mask, rec=recursive,auto_add=autoadd))
             # Remove watch about excluded dir. Not the perfect solution as they would
