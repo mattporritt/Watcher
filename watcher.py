@@ -34,7 +34,6 @@
 import sys, os, time, atexit
 from signal import SIGTERM
 import pyinotify
-import sys, os
 import datetime
 import subprocess
 from types import *
