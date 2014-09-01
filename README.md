@@ -6,6 +6,8 @@ fires commands in response to those changes. It is similar to
 to read ini file instead of a plain text file. Unlike incron it can also
 recursively monitor directories.
 
+A Regex can be defined to only act on files/paths that match the pattern
+
 It's written in Python, making it easier to hack.
 
 ## Requirements
